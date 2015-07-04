@@ -20,29 +20,35 @@ my $ua = LWP::UserAgent->new;
 my $server_endpoint = "http://iotransport:1337/snapshot";
 
 while ( 1 == 1 ) {
-  my @lines = read_file( '/tmp/macs.txt' );
-  unlink('/tmp/macs.txt');
-
-  my @uniq = uniq @lines;
-
-  my $unique = @uniq;
-
-
-  # set custom HTTP request header fields
-  my $req = HTTP::Request->new(POST => $server_endpoint);
-  $req->header('content-type' => 'application/json');
-   
-  # add POST data to HTTP request body
-  my $post_data = "{ \"device\":\"space3d\",\"count\":\"$unique\" }";
-  $req->content($post_data);
-   
-  my $resp = $ua->request($req);
-  if ( ! $resp->is_success) {
-      say "HTTP POST error code: ".$resp->code;
-      say "HTTP POST error message: ".$resp->message;
+  my @lines;
+  if (-f "/tmp/macs.txt" ) {
+    @lines = read_file( '/tmp/macs.txt' );
+    unlink('/tmp/macs.txt');
   }
 
-  say "There are $unique unique devices";
+  if (@lines) {
+
+    my @uniq = uniq @lines;
+
+    my $unique = @uniq;
+
+
+    # set custom HTTP request header fields
+    my $req = HTTP::Request->new(POST => $server_endpoint);
+    $req->header('content-type' => 'application/json');
+     
+    # add POST data to HTTP request body
+    my $post_data = "{ \"device\":\"space3d\",\"count\":\"$unique\" }";
+    $req->content($post_data);
+     
+    my $resp = $ua->request($req);
+    if ( ! $resp->is_success) {
+        say "HTTP POST error code: ".$resp->code;
+        say "HTTP POST error message: ".$resp->message;
+    }
+
+    say "There are $unique unique devices";
+  }
   sleep 120;
 }
 
