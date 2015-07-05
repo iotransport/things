@@ -13,6 +13,7 @@ use autodie;
 use List::MoreUtils qw(uniq);
 use File::Slurp;
 use LWP::UserAgent;
+use FindBin '$Bin';
  
 my $ua = LWP::UserAgent->new;
 
@@ -26,19 +27,27 @@ while ( 1 == 1 ) {
     unlink('/tmp/macs.txt');
   }
 
+  my $capture = `python $Bin/sensor.py`;
+  chomp $capture;
+  my ($temperature,$humidity) = split(',',$capture);
+
   if (@lines) {
 
     my @uniq = uniq @lines;
 
     my $unique = @uniq;
 
-
     # set custom HTTP request header fields
     my $req = HTTP::Request->new(POST => $server_endpoint);
     $req->header('content-type' => 'application/json');
      
     # add POST data to HTTP request body
-    my $post_data = "{ \"device\":\"space3d\",\"count\":\"$unique\" }";
+    my $post_data;
+    if ($capture ne 'Failed') {
+      $post_data = "{ \"device\":\"space3d\",\"count\":\"$unique\",\"temperature\":\"$temperature\",\"humidity\":\"$humidity\" }";
+    } else {
+      $post_data = "{ \"device\":\"space3d\",\"count\":\"$unique\" }";
+    }
     $req->content($post_data);
      
     my $resp = $ua->request($req);
@@ -48,6 +57,7 @@ while ( 1 == 1 ) {
     }
 
     say "There are $unique unique devices";
+    say "Current Temperature ".$temperature."*C, Humidity ".$humidity."%";
   }
   sleep 120;
 }
